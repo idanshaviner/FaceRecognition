@@ -28,9 +28,7 @@ bin/
 ### Mac OS ###
 .DS_Store
 # Large/private training data
-data/**/*.mov
-data/**/*.mp4
-data/**/*.avi
+data\
 
 # Trained LBPH model
 models/model.xml
