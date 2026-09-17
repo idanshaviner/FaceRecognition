@@ -1,4 +1,10 @@
+### Java / Maven ###
+target/
+*.class
+
 ### IntelliJ IDEA ###
+.idea/
+*.iml
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
@@ -27,11 +33,20 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-# Large/private training data
-data\
 
-# Trained LBPH model
+### Private training data ###
+# Keep the folder structure visible in git (.gitkeep placeholders) but
+# never commit the actual photos/videos/frames - these are personal
+# biometric data.
+data/*
+!data/idan/
+!data/unknown/
+data/idan/*
+!data/idan/.gitkeep
+data/unknown/*
+!data/unknown/.gitkeep
+
+### Trained model ###
+# Contains data derived from your face photos - keep it local, regenerate
+# with Trainer instead of committing it.
 models/model.xml
-
-# IntelliJ local files
-.idea/workspace.xml

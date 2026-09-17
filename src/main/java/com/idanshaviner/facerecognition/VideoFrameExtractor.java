@@ -1,3 +1,5 @@
+package com.idanshaviner.facerecognition;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -5,6 +7,12 @@ import org.opencv.videoio.VideoCapture;
 
 import java.io.File;
 
+/**
+ * Bulk-generates training images by pulling every 5th frame out of any
+ * video found under data/idan or data/unknown. Trainer.java's own face
+ * detection filters out frames with no usable face at training time, so
+ * this doesn't need to do any filtering itself.
+ */
 public class VideoFrameExtractor {
     public static void main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);

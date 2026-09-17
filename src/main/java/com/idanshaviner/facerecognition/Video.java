@@ -1,3 +1,4 @@
+package com.idanshaviner.facerecognition;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -10,44 +11,42 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 
-
-
-public class photo {
-
-
-
-    static String imageFile="/Users/idanshaviner/nito.jpeg";
-    static String xmlFile = "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_alt2.xml";
-
-    //	static String xmlFile = "lbpcascade_frontalface.xml";
+/**
+ * Detection-only smoke test against a video file: draws a box around every
+ * face found per frame, no recognition.
+ *
+ * An early version of this class rendered frames by hand (Mat -> JPEG bytes
+ * -> BufferedImage -> a Swing JLabel) before this project settled on
+ * OpenCV's own HighGui.imshow, which does the same job in one call.
+ *
+ * Usage: run from the project root with the video path as the first arg.
+ */
+public class Video {
+    static String xmlFile = "models/haarcascade_frontalface_alt2.xml";
 
     public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Usage: Video <path-to-video>");
+            return;
+        }
+        String videoFile = args[0];
 
-        //openCV library
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-        // open image file
-
-        VideoCapture image = new VideoCapture(imageFile);
-
-
-        if (!image.isOpened()) {
-            System.out.println("Error opening image file");
+        VideoCapture video = new VideoCapture(videoFile);
+        if (!video.isOpened()) {
+            System.out.println("Error opening video file: " + videoFile);
             return;
         }
 
         CascadeClassifier classifier = new CascadeClassifier(xmlFile);
 
-
         Mat frame = new Mat();
-        while (image.read(frame)) {
-
+        while (video.read(frame)) {
             HighGui.imshow("Face Detection", frame);
-
 
             MatOfRect faceDetections = new MatOfRect();
             classifier.detectMultiScale(frame, faceDetections);
-            //System.out.println(String.format("Detected %s faces", faceDetections.toArray().length));
 
             for (Rect rect : faceDetections.toArray()) {
                 Imgproc.rectangle(frame,
@@ -57,11 +56,12 @@ public class photo {
                 );
             }
 
-            HighGui.waitKey(0);
-
+            if (HighGui.waitKey(2) == 27) {
+                break;
+            }
         }
 
-        image.release();
+        video.release();
         HighGui.destroyAllWindows();
     }
 }

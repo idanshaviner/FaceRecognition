@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.idanshaviner</groupId>
+    <artifactId>face-recognition</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!--
+          OpenCV's Java bindings are not published on Maven Central as a
+          drop-in dependency: the jar must match the native .dylib/.so/.dll
+          built alongside it on your machine. This project points at a
+          locally-installed OpenCV build instead of downloading one.
+
+          Default assumes OpenCV was installed via Homebrew. Override if
+          yours lives elsewhere, e.g.:
+            mvn compile -Dopencv.jar=/opt/homebrew/share/java/opencv4/opencv-4100.jar
+        -->
+        <opencv.jar>/usr/local/share/java/opencv4/opencv-4100.jar</opencv.jar>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.opencv</groupId>
+            <artifactId>opencv</artifactId>
+            <version>4.10.0</version>
+            <scope>system</scope>
+            <systemPath>${opencv.jar}</systemPath>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>face-recognition</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
