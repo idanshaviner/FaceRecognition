@@ -27,3 +27,13 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+# Large/private training data
+data/**/*.mov
+data/**/*.mp4
+data/**/*.avi
+
+# Trained LBPH model
+models/model.xml
+
+# IntelliJ local files
+.idea/workspace.xml
