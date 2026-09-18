@@ -50,3 +50,6 @@ data/unknown/*
 # Contains data derived from your face photos - keep it local, regenerate
 # with Trainer instead of committing it.
 models/model.xml
+
+### Personal notes (local only, never committed) ###
+docs/STUDY_GUIDE.md
