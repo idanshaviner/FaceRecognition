@@ -98,11 +98,13 @@ FaceRecognition/
    lightweight `.gitkeep` files keep the folder structure visible in the repo.
 3. **No build system.** The project only built inside one IntelliJ setup, via
    a hand-edited `.iml` pointing at a hardcoded absolute jar path on one
-   machine. Added `pom.xml` so it builds with `mvn compile` anywhere, with
-   the OpenCV jar path exposed as an overridable property — OpenCV's Java
-   bindings aren't published on Maven Central in a way that reliably matches
-   a given machine's native library, so this still needs pointing at a
-   locally-installed OpenCV rather than a normal downloaded dependency.
+   machine. Added `pom.xml` so it builds with `mvn compile`, with the OpenCV
+   jar path exposed as an overridable property. OpenCV itself doesn't publish
+   official Java artifacts to Maven Central (community repackagings exist,
+   e.g. `org.openpnp:opencv`), and the Java classes must match the native
+   library exactly, so the pom points at the locally built jar — that
+   guarantees jar + native lib are the same build, contrib `face` module
+   included.
 4. **Inconsistent, version-pinned native library loading.** `Camera`/
    `Trainer` called `System.loadLibrary("opencv_java4100")` (hardcoding the
    OpenCV version), while `Photo`/`Video` used the version-agnostic
@@ -113,28 +115,26 @@ FaceRecognition/
    path than `Camera`/`Trainer`. Both now take their input path as a CLI
    argument and share the same repo-relative cascade path as the rest of the
    project.
-6. **OpenCV + Java bindings on Apple Silicon.** Homebrew's arm64 `opencv`
-   formula doesn't ship Java bindings with the `opencv_contrib` `face`
-   module (which `LBPHFaceRecognizer` needs) by default, so on this machine
-   the working OpenCV-with-Java-and-face-module build lives under the
-   Intel/Rosetta Homebrew prefix (`/usr/local/...`) even though the machine
-   itself is arm64. If you reinstall OpenCV, make sure Java bindings and
-   `opencv_contrib` are both enabled in the build, and update the
-   `opencv.jar` property in `pom.xml` (and the library path when running) to
-   match.
+6. **OpenCV needs Java bindings + the contrib `face` module.**
+   `LBPHFaceRecognizer` lives in `opencv_contrib`, and the Java wrapper only
+   exists if OpenCV was built with Java enabled. The Homebrew `opencv`
+   installed on this machine (`/opt/homebrew`) has no `opencv-*.jar`, so the
+   project uses a separate native arm64 build in `/usr/local`
+   (`share/java/opencv4/opencv-4100.jar` + `libopencv_java4100.dylib`,
+   version string `4.10.0-dev`, so most likely built from source with Java
+   and contrib enabled). If you reinstall OpenCV, make sure both are enabled
+   and update `opencv.jar` in `pom.xml` and the library path when running.
 
 ## Prerequisites
 
-- JDK 17+
+- JDK 17+ (built and tested on JDK 23, arm64 — the JVM and the OpenCV
+  native library must be the same CPU architecture)
 - OpenCV 4.x built with **Java bindings** and the **`opencv_contrib` `face`
-  module** (required for `org.opencv.face.LBPHFaceRecognizer`):
-  ```bash
-  brew install opencv
-  ```
-  If `brew install opencv` doesn't leave a jar under
-  `<prefix>/share/java/opencv4/`, that build wasn't compiled with Java
-  bindings enabled. This project was verified against
-  `/usr/local/share/java/opencv4/opencv-4100.jar`.
+  module**. Check for a jar at `<prefix>/share/java/opencv4/opencv-*.jar` and
+  a `libopencv_java*.dylib`/`.so`/`.dll` next to it. If you don't have those,
+  build OpenCV from source with `-DBUILD_JAVA=ON` and
+  `-DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules`. This project was
+  verified against `/usr/local/share/java/opencv4/opencv-4100.jar`.
 - Maven, optional — plain `javac`/`java` work fine too (shown below).
 
 ## How to run
@@ -191,9 +191,15 @@ java -cp "target/classes:$OPENCV_JAR" -Djava.library.path="$OPENCV_LIB_DIR" \
 - Single-person closed set — adding a second known person means retraining
   with a new label and updating `Camera`'s label→name mapping by hand;
   there's no data-driven label↔name mapping file.
-- The confidence threshold (`82`) was picked empirically, not validated
-  against a held-out test set — there's no measured accuracy/precision-recall
-  for this model.
+- The confidence threshold (`82`) has no documented derivation and hasn't
+  been validated against a held-out test set — there's no measured
+  accuracy/precision-recall. Measured on synthetic non-face patterns, LBPH
+  distances span roughly 0–250: flat/gradient/checkerboard images scored
+  160–251 (rejected), but random noise scored ~57 against label 0 (accepted
+  as "idan"). Noise is never fed to the recognizer in practice — only Haar
+  detections are — but it shows the threshold alone isn't a strong
+  rejector, and that it needs to be tuned on real held-out faces.
+- The trained model has only 62 samples (33 "idan", 29 "unknown").
 - `Trainer` always uses the *first* detected face in an image
   (`faceDetections.toArray()[0]`), which could pick up a false positive or a
   background face in a group photo.
