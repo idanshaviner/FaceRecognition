@@ -24,4 +24,12 @@ public final class FaceUtils {
         Imgproc.resize(faceROI, faceROI, new Size(FACE_SIZE, FACE_SIZE));
         return faceROI;
     }
+
+    /**
+     * The accept/reject rule shared by Camera and Evaluator. LBPH's
+     * "confidence" is a distance, so lower is a better match.
+     */
+    public static boolean isIdan(int predictedLabel, double distance, double threshold) {
+        return predictedLabel == FaceDataset.LABEL_IDAN && distance < threshold;
+    }
 }

@@ -30,6 +30,8 @@ recognition).
 | `Camera.java` | Main app — live webcam detection + recognition loop. |
 | `Trainer.java` | Offline script that builds `models/model.xml` from `data/`. |
 | `FaceUtils.java` | Shared crop+resize helper used by **both** `Camera` and `Trainer`, so training and live inference preprocess faces identically (see "train/inference skew" below). |
+| `FaceDataset.java` | Loads labelled face crops from a `data/` folder; shared by `Trainer` and `Evaluator`. Also groups video-extracted frames so they can't leak across a train/test split. |
+| `Evaluator.java` | Measures accuracy with grouped k-fold cross-validation and sweeps the accept threshold, reporting false-accept / false-reject rates. Uses the same preprocessing and accept rule (`FaceUtils.isIdan`) as `Camera`. |
 | `VideoFrameExtractor.java` | Turns videos under `data/` into training stills. |
 | `Photo.java` / `Video.java` | Detection-only smoke tests (no recognition) against a static image/video — useful for sanity-checking the cascade file without a trained model or webcam. |
 
@@ -46,6 +48,8 @@ FaceRecognition/
     ├── Camera.java
     ├── Trainer.java
     ├── FaceUtils.java
+    ├── FaceDataset.java
+    ├── Evaluator.java
     ├── VideoFrameExtractor.java
     ├── Photo.java
     └── Video.java
@@ -170,6 +174,21 @@ java -cp "target/classes:$OPENCV_JAR" -Djava.library.path="$OPENCV_LIB_DIR" \
   com.idanshaviner.facerecognition.Trainer
 ```
 
+**2b. Evaluate (recommended before trusting the threshold).** Runs grouped
+k-fold cross-validation over `data/` and prints false-accept (strangers
+accepted as you) and false-reject (you rejected) rates across thresholds,
+plus the threshold at the equal-error point and at a target false-accept rate:
+```bash
+java -cp "target/classes:$OPENCV_JAR" -Djava.library.path="$OPENCV_LIB_DIR" \
+  com.idanshaviner.facerecognition.Evaluator
+```
+Options: `--folds N` (default 5), `--seed S` (default 42), `--far-target F`
+(default 0.01), `--no-detect` (images are already cropped faces, skip Haar).
+Frames extracted from the same video are kept on one side of each split;
+separate photos count as independent. You need at least 2 independent photos
+or videos in each folder, and far more for stable numbers — with ~30 test
+faces per class, one face moves a rate by ~3%.
+
 **3. Run live recognition** (press **Esc** to quit; console logs predicted
 label/confidence per face per frame):
 ```bash
@@ -192,8 +211,8 @@ java -cp "target/classes:$OPENCV_JAR" -Djava.library.path="$OPENCV_LIB_DIR" \
   with a new label and updating `Camera`'s label→name mapping by hand;
   there's no data-driven label↔name mapping file.
 - The confidence threshold (`82`) has no documented derivation and hasn't
-  been validated against a held-out test set — there's no measured
-  accuracy/precision-recall. Measured on synthetic non-face patterns, LBPH
+  yet been validated on real faces — run `Evaluator` on your own data to
+  measure it and pick a better value (`Camera.STRICT_THRESHOLD`). Measured on synthetic non-face patterns, LBPH
   distances span roughly 0–250: flat/gradient/checkerboard images scored
   160–251 (rejected), but random noise scored ~57 against label 0 (accepted
   as "idan"). Noise is never fed to the recognizer in practice — only Haar
@@ -206,7 +225,8 @@ java -cp "target/classes:$OPENCV_JAR" -Djava.library.path="$OPENCV_LIB_DIR" \
 - Haar cascades are more sensitive to pose/lighting than modern DNN-based
   detectors — a natural upgrade path is swapping in OpenCV's `dnn` face
   detector while keeping the recognition stage unchanged.
-- No automated tests.
+- No automated tests. (`Evaluator`'s FAR/FRR/threshold math was checked
+  against a hand-computed example, but that check isn't in the repo yet.)
 
 ## Interview talking points (quick reference)
 

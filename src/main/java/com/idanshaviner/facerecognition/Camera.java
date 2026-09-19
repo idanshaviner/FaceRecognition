@@ -21,6 +21,9 @@ public class Camera {
     static String xmlFile = "models/haarcascade_frontalface_alt2.xml";
     static String modelFile = "models/model.xml";
 
+    // LBPH distance (lower = better match); tune it with Evaluator
+    static final double STRICT_THRESHOLD = 82;
+
     public static void main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
@@ -102,14 +105,7 @@ public class Camera {
                 double[] confidence = new double[1];
                 recognizer.predict(faceROI, label, confidence);
 
-                // labeling only idan or unknown
-                double strictThreshold = 82;
-                String name;
-                if (label[0] == 0 && confidence[0] < strictThreshold) {
-                    name = "idan";
-                } else {
-                    name = "unknown";
-                }
+                String name = FaceUtils.isIdan(label[0], confidence[0], STRICT_THRESHOLD) ? "idan" : "unknown";
 
                 System.out.printf("predicted label: %d, confidence: %.2f, name: %s%n", label[0], confidence[0], name);
                 System.out.println("face size: " + faceRect.width + "x" + faceRect.height);
